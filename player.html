@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Player Dossier — Trail & Bish Dynasty</title>
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+  .topbar{position:sticky; top:0; z-index:10; background:rgba(11,13,18,0.92); backdrop-filter:blur(8px); border-bottom:1px solid var(--line); padding:14px 16px;}
+  .backlink{font-size:11px; color:var(--muted); text-decoration:none;}
+  .hero{padding:20px 16px 14px;}
+  .hero .rank{font-size:11px; color:var(--muted); font-family:"SFMono-Regular",Consolas,monospace; margin-bottom:6px;}
+  .hero .pname{font-size:clamp(28px,8vw,40px); line-height:1;}
+  .hero .meta{margin-top:8px; font-size:13px; color:var(--muted); display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .owner-dot{width:9px;height:9px;border-radius:50%; display:inline-block;}
+  .owner-dot.matt{background:var(--matt);}
+  .owner-dot.ryan{background:var(--ryan);}
+  .score-row{display:flex; align-items:baseline; gap:14px; margin-top:16px;}
+  .score-big{font-family:"SFMono-Regular",Consolas,monospace; font-size:48px;}
+  .tier-badge{font-size:11px; letter-spacing:0.08em; text-transform:uppercase; padding:5px 12px; border-radius:20px; border:1px solid var(--line); color:var(--muted);}
+  .tier-badge.legend{background:linear-gradient(90deg,var(--legend-a),var(--legend-b),var(--legend-c)); color:#0B0D12; border:none; font-weight:700;}
+  .tier-badge.franchise{border-color:#a9822e; color:#e8c27a;}
+  .tier-badge.high-end-starter{border-color:#3a4a73; color:#8fa3d6;}
+
+  .card{margin:0 16px 10px; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px;}
+  .card h3{font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:10px;}
+  .fact-row{display:flex; align-items:flex-start; gap:8px; padding:7px 0; border-bottom:1px solid var(--surface2); font-size:13.5px;}
+  .fact-row:last-child{border-bottom:none;}
+  .fact-row .dot{width:5px;height:5px;border-radius:50%; background:var(--legend-a); margin-top:7px; flex:0 0 auto;}
+  .source-tag{display:inline-block; margin-top:10px; font-size:9.5px; color:var(--muted); letter-spacing:0.05em; border:1px dashed var(--line); padding:3px 8px; border-radius:8px;}
+
+  .wc-mini{background:var(--surface2); border-radius:10px; padding:10px 12px; margin-top:8px;}
+  .wc-mini .wtitle{font-size:11px; color:var(--muted); margin-bottom:4px;}
+  .meter{height:5px; border-radius:3px; background:#0B0D12; overflow:hidden; margin-top:6px;}
+  .meter .m-fill{height:100%; border-radius:3px;}
+
+  .links-row{display:flex; gap:8px; padding:6px 16px 4px; flex-wrap:wrap;}
+  .link-chip{font-size:11px; color:var(--muted); text-decoration:none; border:1px solid var(--line); padding:7px 12px; border-radius:20px;}
+
+  .disclaimer{margin:14px 16px 4px; font-size:10.5px; color:var(--muted); line-height:1.6;}
+</style>
+</head>
+<body>
+
+  <div class="topbar"><a class="backlink" href="roster.html">&larr; Full Roster</a></div>
+
+  <div id="content"></div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const rankParam = params.get('rank');
+
+function tierClass(t){ return (t||"").toLowerCase().replace(/\s+/g,'-'); }
+function meterColor(v){
+  if(v<=15) return '#3ECF6E';
+  if(v<=35) return '#2FB8C6';
+  if(v<=50) return '#F2A93B';
+  if(v<=65) return '#E8862E';
+  return '#E8543A';
+}
+
+Promise.all([
+  fetch('data/players.json').then(r=>r.json()),
+  fetch('data/wildcards.json').then(r=>r.json()),
+]).then(([players, wildcards])=>{
+  const p = rankParam ? players.find(x=>String(x.rank)===rankParam) : players[0];
+  const content = document.getElementById('content');
+  if(!p){
+    content.innerHTML = '<div class="card">Player not found.</div>';
+    return;
+  }
+
+  const isPFR = (p.notes||'').includes('(PFR-verified)');
+  const facts = isPFR
+    ? p.notes.replace(' (PFR-verified)','').split('; ').filter(Boolean)
+    : (p.notes ? [p.notes] : []);
+
+  const ownerLower = (p.owner||'').toLowerCase();
+
+  let html = `
+    <div class="hero">
+      <div class="rank">#${p.rank} OVERALL</div>
+      <div class="pname display">${p.name}</div>
+      <div class="meta">
+        <span><span class="owner-dot ${ownerLower}"></span> ${p.owner}'s Roster</span>
+        <span>&middot;</span>
+        <span>${p.position}</span>
+        <span>&middot;</span>
+        <span>Drafted ${p.year}</span>
+      </div>
+      <div class="score-row">
+        <div class="score-big">${p.score}</div>
+        <div class="tier-badge ${tierClass(p.tier)}">${p.tier}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Why This Player Ranks Here</h3>
+      ${facts.length ? facts.map(f=>`<div class="fact-row"><span class="dot"></span><span>${f}</span></div>`).join('') : '<div class="fact-row"><span class="dot"></span><span>No record on file.</span></div>'}
+      <span class="source-tag">${isPFR ? 'SOURCE: PRO FOOTBALL REFERENCE' : 'SOURCE: TEXT RECORD (NOT YET PFR-VERIFIED)'}</span>
+    </div>
+
+    <div class="card">
+      <h3>Career Timeline</h3>
+      <div class="fact-row"><span class="dot"></span><span>${p.year} &mdash; Drafted (${p.position})</span></div>
+      ${facts.filter(f=>/\(\d{4}/.test(f)).map(f=>`<div class="fact-row"><span class="dot"></span><span>${f}</span></div>`).join('')}
+    </div>
+  `;
+
+  const wc = wildcards.filter(w => w.player === p.name);
+  if(wc.length){
+    html += `<div class="card"><h3>Wildcard Boys Record</h3>`;
+    wc.forEach(w=>{
+      const hasOutcome = w.outcome && w.outcome !== 'NaN';
+      html += `
+        <div class="wc-mini">
+          <div class="wtitle">${w.year} &middot; ${w.category}</div>
+          <div>${w.player} &mdash; ${w.position}</div>
+          ${hasOutcome ? `
+            <div class="meter"><div class="m-fill" style="width:${w.meter}%; background:${meterColor(w.meter)}"></div></div>
+            <div style="margin-top:5px; font-size:11px; color:${meterColor(w.meter)};">${w.outcome}</div>
+          ` : `<div style="margin-top:5px; font-size:11px; color:var(--muted);">Not yet graded</div>`}
+        </div>
+      `;
+    });
+    html += `</div>`;
+  }
+
+  content.innerHTML = html;
+
+  const linksRow = document.createElement('div');
+  linksRow.className = 'links-row';
+  linksRow.innerHTML = `
+    <a class="link-chip" href="legacy.html?tier=${encodeURIComponent(p.tier)}">See other ${p.tier}s &rarr;</a>
+    <a class="link-chip" href="draft-classes.html?year=${p.year}">${p.year} draft class &rarr;</a>
+    <a class="link-chip" href="records.html">Dynasty Records &rarr;</a>
+  `;
+  content.appendChild(linksRow);
+
+  const disclaimer = document.createElement('div');
+  disclaimer.className = 'disclaimer';
+  disclaimer.textContent = 'This dossier only shows facts present in the Trail & Bish Dynasty record — no simulated seasons, championships, or matchup history exist in this game, so none are shown here.';
+  content.appendChild(disclaimer);
+});
+</script>
+<script src="assets/nav.js" defer></script>
+</body>
+</html>

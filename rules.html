@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rules — Trail & Bish Dynasty</title>
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+  .topbar{padding:14px 16px; border-bottom:1px solid var(--line);}
+  .brand{font-size:13px; letter-spacing:0.14em; color:var(--muted);}
+  .brand b{color:var(--text);}
+  .formula-box{margin:0 16px; padding:18px 16px; background:var(--surface); border:1px solid var(--line); border-radius:14px; text-align:center;}
+  .formula-box .f{font-size:15px;}
+  .formula-box .fnote{font-size:10.5px; color:var(--muted); margin-top:8px;}
+  .award-list{padding:4px 16px;}
+  .award-row{display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:1px solid var(--line); font-size:13px;}
+  .award-row .pts{font-family:"SFMono-Regular",Consolas,monospace; color:var(--muted); font-size:12px;}
+  .tier-list{padding:4px 16px;}
+  .tier-row{display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line);}
+  .tier-swatch{width:10px; height:10px; border-radius:3px; flex:0 0 auto;}
+  .tier-row .tname{font-size:13px; flex:1;}
+  .tier-row .trange{font-family:"SFMono-Regular",Consolas,monospace; font-size:12px; color:var(--muted);}
+  .pi-note{margin:4px 16px; padding:14px 16px; background:var(--surface); border:1px dashed var(--line); border-radius:12px; font-size:11px; color:var(--muted); line-height:1.7;}
+</style>
+</head>
+<body>
+
+  <div class="topbar"><div class="brand"><b>RULES & SCORING</b></div><a href="verification.html" style="font-size:11px; color:var(--muted); text-decoration:none;">View verification progress &rarr;</a></div>
+
+  <div class="section-label"><span class="display">Overall Score — v4 (PFR-verified)</span><span class="rule"></span></div>
+  <div class="formula-box mono">
+    <div class="f">SCORE = AWARD PTS + ALL-PRO PTS + ROLE PTS</div>
+    <div class="fnote">Built from real Pro Football Reference data — exact award years and exact All-Pro selection counts, not text-parsed from a write-up. Pro Bowl selections are noted in a player's record but deliberately not scored — Pro Bowl voting is too inconsistent to weight fairly. 270 of 326 players are scored this way; the rest still use the older text-based method until matched.</div>
+  </div>
+  <div class="pi-note">
+    Every prior version scored a <b style="color:var(--text)">description</b> of a player's career. This
+    version scores <b style="color:var(--text)">actual records</b>: real MVP/OPOY/DPOY/OROY/DROY/Super
+    Bowl MVP winners by year (1957–2025) and every AP First-Team All-Pro selection by year
+    (2007–2025), sourced from Pro Football Reference exports. Career approximate value (2016+ draft
+    classes) drives the Role component. A player's score reflects the exact number of times they won
+    something, not a "single vs. multiple" guess from a sentence.
+  </div>
+
+  <div class="section-label"><span class="display">Points Per Occurrence</span><span class="rule"></span></div>
+  <div class="award-list">
+    <div class="award-row"><span>MVP (per win)</span><span class="pts">+40</span></div>
+    <div class="award-row"><span>Super Bowl MVP (per win)</span><span class="pts">+25</span></div>
+    <div class="award-row"><span>OPOY / DPOY (per win)</span><span class="pts">+22</span></div>
+    <div class="award-row"><span>OROY / DROY</span><span class="pts">+12</span></div>
+    <div class="award-row"><span>AP First-Team All-Pro (per selection)</span><span class="pts">+15</span></div>
+    <div class="award-row"><span>Pro Bowl selections</span><span class="pts">Noted only — not scored</span></div>
+  </div>
+
+  <div class="section-label"><span class="display">Role Points</span><span class="rule"></span></div>
+  <div class="section-sub" style="padding:0 16px 8px;">For 2016+ draftees, based on real career Approximate Value (AV) from PFR — not language. For pre-2016 draftees (not in the draft-class data), falls back to the write-up's stated role.</div>
+  <div class="award-list">
+    <div class="award-row"><span>Career AV ≥ 18 (productive starter)</span><span class="pts">+5</span></div>
+    <div class="award-row"><span>Career AV 5–17 (role/depth player)</span><span class="pts">+2</span></div>
+    <div class="award-row"><span>Career AV &lt; 5</span><span class="pts">+0</span></div>
+  </div>
+
+  <div class="section-label"><span class="display">Tiers</span><span class="rule"></span></div>
+  <div class="pi-note">
+    Fixed thresholds on the new point scale: Legend ≥55, Franchise 28–54.9, High-End Starter 12–27.9,
+    Starter 5–11.9, Contributor 2–4.9, Bust 0–1.9. Recalculated after Pro Bowl points were removed.
+  </div>
+  <div class="tier-list">
+    <div class="tier-row"><span class="tier-swatch" style="background:linear-gradient(90deg,var(--legend-a),var(--legend-b),var(--legend-c))"></span><span class="tname">Legend</span><span class="trange">≥ 55</span></div>
+    <div class="tier-row"><span class="tier-swatch" style="background:#e8c27a"></span><span class="tname">Franchise</span><span class="trange">28 – 54.9</span></div>
+    <div class="tier-row"><span class="tier-swatch" style="background:#8fa3d6"></span><span class="tname">High-End Starter</span><span class="trange">12 – 27.9</span></div>
+    <div class="tier-row"><span class="tier-swatch" style="background:var(--muted)"></span><span class="tname">Starter</span><span class="trange">5 – 11.9</span></div>
+    <div class="tier-row"><span class="tier-swatch" style="background:#5a6270"></span><span class="tname">Contributor</span><span class="trange">2 – 4.9</span></div>
+    <div class="tier-row"><span class="tier-swatch" style="background:#3a3f4a"></span><span class="tname">Bust</span><span class="trange">0 – 1.9</span></div>
+  </div>
+
+  <div class="section-label"><span class="display">Known Limitation</span><span class="rule"></span></div>
+  <div class="pi-note">
+    Two real gaps remain, both visible on the Verify page: (1) the AP All-Pro roster data only goes
+    back to 2007 and the draft-class AV data only covers 2016+ draftees, so pre-2016 draftees without
+    an All-Pro or major award still lean on the older, less reliable text-based role guess. (2) 56 of
+    326 scored players didn't match any of the three PFR datasets by name — some genuinely have no
+    major accolades, others may need a name-matching fix (nicknames, suffixes). Both are being worked
+    through, tracked openly on the Verify page rather than silently assumed correct.
+  </div>
+
+
+  <div class="section-label"><span class="display">Wildcard Cooked Meter</span><span class="rule"></span></div>
+  <div class="pi-note">
+    A 0–100 scale graded after the fact on late/speculative picks. Lower is better: 0–15 Elite hit,
+    16–35 Solid value / Strong hit, 36–50 Mixed result, 51–65 Underwhelming, 66+ Cooked.
+  </div>
+
+  <div class="section-label"><span class="display">Dynasty Power Index</span><span class="rule"></span></div>
+  <div class="pi-note">
+    Site-only composite metric (not part of the original workbook): average score plus a
+    tier-weighted bonus per pick — Legend +15, Franchise +8, HES +3, Starter 0, Contributor −3,
+    Bust −8 — averaged across the roster. Rewards stacking difference-makers over just accumulating picks.
+  </div>
+
+<script src="assets/nav.js" defer></script>
+</body>
+</html>

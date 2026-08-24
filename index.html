@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trail & Bish Dynasty</title>
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+  .topbar{display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid var(--line);}
+  .topbar .brand{font-size:15px; letter-spacing:0.14em; color:var(--muted);}
+  .topbar .brand b{color:var(--text);}
+  .topbar .year{font-size:12px; color:var(--muted); font-family:"SFMono-Regular",Consolas,monospace; border:1px solid var(--line); border-radius:20px; padding:4px 10px;}
+
+  .hero{position:relative; display:grid; grid-template-columns:1fr 1fr; min-height:230px; overflow:hidden; border-bottom:1px solid var(--line);}
+  .hero-side{position:relative; padding:26px 16px 20px; display:flex; flex-direction:column; justify-content:flex-end;}
+  .hero-side.matt{background:linear-gradient(160deg, rgba(62,107,224,0.18), transparent 65%);}
+  .hero-side.ryan{background:linear-gradient(200deg, rgba(224,69,62,0.18), transparent 65%); text-align:right; align-items:flex-end;}
+  .hero-side .tag{font-size:11px; letter-spacing:0.18em; color:var(--muted); margin-bottom:6px;}
+  .hero-side.matt .tag{color:var(--matt);}
+  .hero-side.ryan .tag{color:var(--ryan);}
+  .hero-side .name{font-size:clamp(30px,9vw,44px); line-height:0.92;}
+  .hero-side .avg{margin-top:10px; font-size:12px; color:var(--muted);}
+  .hero-side .avg b{font-family:"SFMono-Regular",Consolas,monospace; color:var(--text); font-size:15px;}
+  .vs-badge{position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:52px;height:52px; border-radius:50%; background:var(--bg); border:2px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:14px; color:var(--muted); z-index:3; box-shadow:0 0 0 6px var(--bg);}
+  .hero-seam{position:absolute; top:0; bottom:0; left:50%; width:1px; background:linear-gradient(var(--matt), var(--line) 40%, var(--line) 60%, var(--ryan)); opacity:0.6;}
+
+  .stat-list{padding:4px 18px 8px;}
+  .stat-row{padding:12px 0; border-bottom:1px solid var(--line);}
+  .stat-row .label-row{display:flex; justify-content:space-between; align-items:baseline; font-size:11px; color:var(--muted); letter-spacing:0.06em; margin-bottom:7px;}
+  .stat-bar{position:relative; height:8px; border-radius:5px; background:var(--surface2); overflow:hidden; display:flex;}
+  .stat-bar .fill{height:100%;}
+  .stat-bar .fill.matt{background:var(--matt);}
+  .stat-bar .fill.ryan{background:var(--ryan);}
+  .stat-vals{display:flex; justify-content:space-between; margin-top:6px; font-size:15px;}
+  .stat-vals .v{font-family:"SFMono-Regular",Consolas,monospace;}
+  .stat-vals .v.matt{color:var(--matt);}
+  .stat-vals .v.ryan{color:var(--ryan);}
+  .stat-vals .edge{font-size:9px; letter-spacing:0.1em; color:var(--muted); align-self:center;}
+
+  .tier-strip{display:flex; gap:8px; overflow-x:auto; padding:6px 18px 4px; -webkit-overflow-scrolling:touch;}
+  .tier-chip{flex:0 0 auto; font-size:10px; letter-spacing:0.08em; text-transform:uppercase; padding:6px 11px; border-radius:20px; border:1px solid var(--line); color:var(--muted); white-space:nowrap;}
+  .tier-chip.legend{background:linear-gradient(90deg,var(--legend-a),var(--legend-b),var(--legend-c)); color:#0B0D12; font-weight:700; border:none;}
+  .tier-chip.franchise{border-color:#a9822e; color:#e8c27a;}
+  .tier-chip.hes{border-color:#3a4a73; color:#8fa3d6;}
+
+  .rail-scroll{display:flex; gap:12px; overflow-x:auto; padding:6px 18px 8px; -webkit-overflow-scrolling:touch; scroll-snap-type:x mandatory;}
+  .card{flex:0 0 auto; width:150px; scroll-snap-align:start; border-radius:14px; padding:1.5px; background:linear-gradient(145deg,var(--legend-a),var(--legend-b),var(--legend-c));}
+  .card-inner{background:var(--surface); border-radius:13px; padding:14px 12px; height:100%;}
+  .card .pos{font-size:10px; color:var(--muted); letter-spacing:0.1em;}
+  .card .pname{font-size:16px; line-height:1.15; margin:6px 0 10px; min-height:38px;}
+  .card .score{font-family:"SFMono-Regular",Consolas,monospace; font-size:22px;}
+  .card .owner{margin-top:8px; font-size:10px; letter-spacing:0.08em; text-transform:uppercase;}
+  .card .owner.matt{color:var(--matt);}
+  .card .owner.ryan{color:var(--ryan);}
+
+  .wc-card{margin:6px 18px 8px; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px 16px;}
+  .wc-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;}
+  .wc-head .t{font-size:13px; color:var(--muted); letter-spacing:0.08em; text-transform:uppercase;}
+  .wc-pair{display:flex; gap:10px;}
+  .wc-pick{flex:1; background:var(--surface2); border-radius:10px; padding:10px 12px;}
+  .wc-pick .who{font-size:10px; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:4px;}
+  .wc-pick.matt .who{color:var(--matt);}
+  .wc-pick.ryan .who{color:var(--ryan);}
+  .wc-pick .pl{font-size:14px; margin-bottom:8px;}
+  .meter{height:5px; border-radius:3px; background:#0B0D12; overflow:hidden;}
+  .meter .m-fill{height:100%; border-radius:3px;}
+  .wc-pick .outcome{margin-top:6px; font-size:10px; color:var(--muted);}
+
+  .footnote{padding:20px 18px 4px; font-size:11px; color:var(--muted); line-height:1.6;}
+  .footnote b{color:var(--text);}
+  .footnote a{color:var(--muted);}
+
+  @media(min-width:640px){
+    .hero-side .name{font-size:56px;}
+    .rail-scroll{flex-wrap:wrap; overflow:visible;}
+    .card{width:170px;}
+  }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="brand"><b>TRAIL</b> & <b>BISH</b> DYNASTY</div>
+    <div class="year mono">2007–2026</div>
+  </div>
+
+  <div class="hero">
+    <div class="hero-seam"></div>
+    <div class="vs-badge display">VS</div>
+    <div class="hero-side matt">
+      <div class="tag">Owner</div>
+      <div class="name display">Matt</div>
+      <div class="avg" id="mattAvg">Avg Score <b>—</b></div>
+    </div>
+    <div class="hero-side ryan">
+      <div class="tag">Owner</div>
+      <div class="name display">Ryan</div>
+      <div class="avg" id="ryanAvg">Avg Score <b>—</b></div>
+    </div>
+  </div>
+
+  <div class="section-label"><span class="display">The Record</span><span class="rule"></span></div>
+  <div style="padding:0 18px 8px;"><a href="man-status.html" style="font-size:11px; color:var(--muted); text-decoration:none;">Full Man Status page &rarr;</a></div>
+  <div class="stat-list" id="stats"></div>
+
+  <div class="section-label"><span class="display">Tier System</span><span class="rule"></span></div>
+  <div class="tier-strip">
+    <div class="tier-chip legend">Legend 55+</div>
+    <div class="tier-chip franchise">Franchise 28–54.9</div>
+    <div class="tier-chip hes">High-End Starter 12–27.9</div>
+    <div class="tier-chip">Starter 5–11.9</div>
+    <div class="tier-chip">Contributor 2–4.9</div>
+    <div class="tier-chip">Bust 0–1.9</div>
+  </div>
+
+  <div class="section-label"><span class="display">Top of the Dynasty</span><span class="rule"></span></div>
+  <div class="rail-scroll" id="cards"></div>
+
+  <div class="section-label"><span class="display">Wildcard Boys · Cooked Meter</span><span class="rule"></span></div>
+  <div id="wildcards"></div>
+
+  <div class="footnote">
+    <b>Scoring:</b> OVERALL SCORE = min(100, baseline + 0.6 × min(award points, 16)). Full breakdown on the <a href="rules.html">Rules</a> page.
+  </div>
+
+<script>
+function meterColor(v){
+  if(v<=15) return '#3ECF6E';
+  if(v<=35) return '#2FB8C6';
+  if(v<=50) return '#F2A93B';
+  if(v<=65) return '#E8862E';
+  return '#E8543A';
+}
+
+Promise.all([
+  fetch('data/players.json').then(r=>r.json()),
+  fetch('data/man_status.json').then(r=>r.json()),
+  fetch('data/wildcards.json').then(r=>r.json()),
+]).then(([players, manStatus, wildcards])=>{
+
+  const scored = players.filter(p=>p.score!=="—" && p.score!=null);
+  const avg = owner => {
+    const s = scored.filter(p=>p.owner===owner).map(p=>parseFloat(p.score));
+    return (s.reduce((a,b)=>a+b,0)/s.length).toFixed(1);
+  };
+  document.getElementById('mattAvg').innerHTML = `Avg Score <b>${avg('Matt')}</b> · ${players.filter(p=>p.owner==='Matt').length} picks`;
+  document.getElementById('ryanAvg').innerHTML = `Avg Score <b>${avg('Ryan')}</b> · ${players.filter(p=>p.owner==='Ryan').length} picks`;
+
+  // headline stats (skip Total Picks/Avg Score rows, already shown in hero)
+  const skip = new Set(["Total Picks","Avg Score"]);
+  const statsEl = document.getElementById('stats');
+  manStatus.filter(s=>!skip.has(s.label)).forEach(s=>{
+    const m = parseFloat(s.matt), r = parseFloat(s.ryan);
+    const max = Math.max(m, r, 1);
+    const mPct = (m/max)*50, rPct = (r/max)*50;
+    const row = document.createElement('div');
+    row.className = 'stat-row';
+    row.innerHTML = `
+      <div class="label-row"><span>${s.label}</span></div>
+      <div class="stat-bar">
+        <div style="width:50%;display:flex;justify-content:flex-end;"><div class="fill matt" style="width:${mPct}%"></div></div>
+        <div style="width:50%;"><div class="fill ryan" style="width:${rPct}%"></div></div>
+      </div>
+      <div class="stat-vals">
+        <span class="v matt">${s.matt}</span>
+        <span class="edge">${s.edge} EDGE</span>
+        <span class="v ryan">${s.ryan}</span>
+      </div>
+    `;
+    statsEl.appendChild(row);
+  });
+
+  // top 6 by score
+  const top6 = [...scored].sort((a,b)=>parseFloat(b.score)-parseFloat(a.score)).slice(0,6);
+  const cardsEl = document.getElementById('cards');
+  top6.forEach(p=>{
+    const c = document.createElement('div');
+    c.className = 'card';
+    c.innerHTML = `
+      <div class="card-inner">
+        <div class="pos mono">#${p.rank} · ${p.position}</div>
+        <div class="pname display">${p.name}</div>
+        <div class="score">${p.score}</div>
+        <div class="owner ${p.owner.toLowerCase()}">${p.owner}'s Roster</div>
+      </div>
+    `;
+    cardsEl.appendChild(c);
+  });
+
+  // most recent 4 fully-graded years, WC1 category pair each
+  const graded = wildcards.filter(w=>w.outcome && w.outcome!=='NaN');
+  const gradedYears = [...new Set(graded.map(w=>w.year))].sort((a,b)=>b-a).slice(0,4);
+  const wcEl = document.getElementById('wildcards');
+  gradedYears.forEach(year=>{
+    const picks = graded.filter(w=>w.year===year && w.category==='WC1');
+    const matt = picks.find(w=>w.owner==='Matt');
+    const ryan = picks.find(w=>w.owner==='Ryan');
+    if(!matt || !ryan) return;
+    const div = document.createElement('div');
+    div.className = 'wc-card';
+    div.innerHTML = `
+      <div class="wc-head"><span class="t">${year} · WC1</span></div>
+      <div class="wc-pair">
+        <div class="wc-pick matt">
+          <div class="who">Matt</div>
+          <div class="pl">${matt.player}</div>
+          <div class="meter"><div class="m-fill" style="width:${matt.meter}%; background:${meterColor(matt.meter)}"></div></div>
+          <div class="outcome">${matt.outcome}</div>
+        </div>
+        <div class="wc-pick ryan">
+          <div class="who">Ryan</div>
+          <div class="pl">${ryan.player}</div>
+          <div class="meter"><div class="m-fill" style="width:${ryan.meter}%; background:${meterColor(ryan.meter)}"></div></div>
+          <div class="outcome">${ryan.outcome}</div>
+        </div>
+      </div>
+    `;
+    wcEl.appendChild(div);
+  });
+});
+</script>
+<script src="assets/nav.js" defer></script>
+</body>
+</html>

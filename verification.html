@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verification — Trail & Bish Dynasty</title>
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+  .topbar{padding:14px 16px; border-bottom:1px solid var(--line);}
+  .brand{font-size:13px; letter-spacing:0.14em; color:var(--muted);}
+  .brand b{color:var(--text);}
+  .progress-wrap{padding:16px;}
+  .progress-card{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:18px 16px;}
+  .progress-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px;}
+  .progress-top .n{font-family:"SFMono-Regular",Consolas,monospace; font-size:28px;}
+  .progress-top .of{font-size:12px; color:var(--muted);}
+  .bar{height:8px; border-radius:5px; background:var(--surface2); overflow:hidden;}
+  .bar .fill{height:100%; background:linear-gradient(90deg,var(--legend-a),var(--legend-b),var(--legend-c));}
+  .progress-note{margin-top:10px; font-size:11px; color:var(--muted); line-height:1.6;}
+  .log-item{margin:0 16px 10px; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px 14px;}
+  .log-item .lname{font-size:14px; font-weight:600; margin-bottom:4px;}
+  .log-item .lstatus{font-size:9px; letter-spacing:0.08em; text-transform:uppercase; padding:2px 8px; border-radius:8px; display:inline-block; margin-bottom:6px;}
+  .lstatus.corrected{background:#e0453e33; color:#ff8a84;}
+  .lstatus.confirmed_accurate{background:#3ecf6e33; color:#6ee89b;}
+  .log-item .ldetail{font-size:11px; color:var(--muted); line-height:1.5;}
+  .log-item .lscores{font-size:11px; margin-top:6px; font-family:"SFMono-Regular",Consolas,monospace;}
+</style>
+</head>
+<body>
+
+  <div class="topbar"><div class="brand"><b>VERIFICATION PROGRESS</b></div></div>
+
+  <div class="section-label"><span class="display">Fact-Check Status</span><span class="rule"></span></div>
+  <div class="progress-wrap">
+    <div class="progress-card">
+      <div class="progress-top">
+        <span class="n" id="pn">—</span>
+        <span class="of" id="pof">of 326 scored players individually verified</span>
+      </div>
+      <div class="bar"><div class="fill" id="pbar" style="width:0%"></div></div>
+      <div class="progress-note">
+        This is an ongoing, multi-session project — verifying a real person's career against actual
+        sources takes real research, not a keyword scan. Every player's note is either confirmed
+        accurate or corrected here as it's checked. Unverified players keep their existing note
+        until checked; nothing is assumed correct by default.
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label"><span class="display">Corrections & Confirmations Log</span><span class="rule"></span></div>
+  <div id="log"></div>
+
+<script>
+fetch('data/verification.json').then(r=>r.json()).then(v=>{
+  document.getElementById('pn').textContent = v.verified_count;
+  document.getElementById('pof').textContent = `of ${v.total_scored} scored players individually verified`;
+  document.getElementById('pbar').style.width = (100*v.verified_count/v.total_scored) + '%';
+
+  const logEl = document.getElementById('log');
+  v.log.forEach(item=>{
+    const el = document.createElement('div');
+    el.className = 'log-item';
+    const label = item.status === 'corrected' ? 'Correction Found' : 'Confirmed Accurate';
+    el.innerHTML = `
+      <div class="lname">${item.name}</div>
+      <div class="lstatus ${item.status}">${label}</div>
+      <div class="ldetail">${item.reason}</div>
+      ${item.status==='corrected' ? `<div class="lscores">${item.old_score} (${item.old_tier}) \u2192 ${item.new_score} (${item.new_tier})</div>` : ''}
+    `;
+    logEl.appendChild(el);
+  });
+});
+</script>
+<script src="assets/nav.js" defer></script>
+</body>
+</html>

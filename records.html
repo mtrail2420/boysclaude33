@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Records — Trail & Bish Dynasty</title>
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+  .topbar{padding:14px 16px; border-bottom:1px solid var(--line);}
+  .brand{font-size:13px; letter-spacing:0.14em; color:var(--muted);}
+  .brand b{color:var(--text);}
+  .disclaimer{font-size:10.5px; color:var(--muted); margin-top:6px; line-height:1.5;}
+
+  .rec-card{margin:0 16px 8px; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:13px 14px; display:flex; justify-content:space-between; align-items:center; gap:10px; text-decoration:none; color:var(--text);}
+  .rec-label{font-size:11px; color:var(--muted); letter-spacing:0.03em;}
+  .rec-value{font-size:14.5px; font-weight:600; margin-top:3px;}
+  .rec-num{font-family:"SFMono-Regular",Consolas,monospace; font-size:20px; flex:0 0 auto; text-align:right;}
+  .rec-owner-dot{width:7px;height:7px;border-radius:50%; display:inline-block; margin-right:5px;}
+  .rec-owner-dot.matt{background:var(--matt);}
+  .rec-owner-dot.ryan{background:var(--ryan);}
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="brand"><b>DYNASTY RECORDS</b></div>
+    <div class="disclaimer">Everything below is computed directly from the verified player and Wildcard Boys data &mdash; no simulated seasons, weekly scores, or championships exist in this game, so none appear here.</div>
+  </div>
+
+  <div class="section-label"><span class="display">Scoring</span><span class="rule"></span></div>
+  <div id="scoring"></div>
+
+  <div class="section-label"><span class="display">Awards on the Roster</span><span class="rule"></span></div>
+  <div id="awards"></div>
+
+  <div class="section-label"><span class="display">Draft Classes</span><span class="rule"></span></div>
+  <div id="classes"></div>
+
+  <div class="section-label"><span class="display">Tier Counts</span><span class="rule"></span></div>
+  <div id="tiers"></div>
+
+  <div class="section-label"><span class="display">Wildcard Boys</span><span class="rule"></span></div>
+  <div id="wildcard"></div>
+
+<script>
+function card(label, value, num, href){
+  const el = document.createElement(href ? 'a' : 'div');
+  el.className = 'rec-card';
+  if(href) el.href = href;
+  el.innerHTML = `
+    <div><div class="rec-label">${label}</div><div class="rec-value">${value}</div></div>
+    <div class="rec-num">${num}</div>
+  `;
+  return el;
+}
+function ownerTag(owner){
+  return `<span class="rec-owner-dot ${owner.toLowerCase()}"></span>${owner}`;
+}
+
+Promise.all([
+  fetch('data/players.json').then(r=>r.json()),
+  fetch('data/wildcards.json').then(r=>r.json()),
+]).then(([allPlayers, wildcards])=>{
+
+  const players = allPlayers.filter(p=>p.score!=='\u2014');
+
+  // ---- SCORING ----
+  const scoringEl = document.getElementById('scoring');
+  const topOverall = [...players].sort((a,b)=>parseFloat(b.score)-parseFloat(a.score))[0];
+  scoringEl.appendChild(card('Highest Dynasty Score', `${ownerTag(topOverall.owner)} &mdash; ${topOverall.name}`, topOverall.score, `player.html?rank=${topOverall.rank}`));
+
+  ['Matt','Ryan'].forEach(owner=>{
+    const top = [...players].filter(p=>p.owner===owner).sort((a,b)=>parseFloat(b.score)-parseFloat(a.score))[0];
+    scoringEl.appendChild(card(`${owner}'s Top Pick`, top.name, top.score, `player.html?rank=${top.rank}`));
+  });
+
+  // ---- AWARDS (parsed from verified note text) ----
+  function countAward(pattern){
+    const hits = players.filter(p => pattern.test(p.notes||''));
+    return hits;
+  }
+  const awardDefs = [
+    ['MVP Wins on Roster', /\bMVP\b(?!\s*\()?.*\(/],
+    ['OPOY Wins on Roster', /\bOPOY\b/],
+    ['DPOY Wins on Roster', /\bDPOY\b/],
+    ['OROY Wins on Roster', /\bOROY\b/],
+    ['DROY Wins on Roster', /\bDROY\b/],
+    ['SB MVP Wins on Roster', /SB_MVP|SB MVP/],
+  ];
+  const awardsEl = document.getElementById('awards');
+  awardDefs.forEach(([label, pattern])=>{
+    const hits = countAward(pattern);
+    if(!hits.length) return;
+    const names = hits.map(h=>h.name).slice(0,3).join(', ') + (hits.length>3 ? ` +${hits.length-3} more` : '');
+    awardsEl.appendChild(card(label, names, hits.length));
+  });
+
+  // most AP All-Pro selections, single player
+  const apCounts = players.map(p=>{
+    const m = (p.notes||'').match(/(\d+)x AP First-Team All-Pro/);
+    return {p, count: m ? parseInt(m[1]) : 0};
+  }).filter(x=>x.count>0).sort((a,b)=>b.count-a.count);
+  if(apCounts.length){
+    const top = apCounts[0];
+    awardsEl.appendChild(card('Most AP First-Team All-Pro Selections', `${ownerTag(top.p.owner)} &mdash; ${top.p.name}`, `${top.count}x`, `player.html?rank=${top.p.rank}`));
+  }
+  const pbCounts = players.map(p=>{
+    const m = (p.notes||'').match(/(\d+)x Pro Bowl/);
+    return {p, count: m ? parseInt(m[1]) : 0};
+  }).filter(x=>x.count>0).sort((a,b)=>b.count-a.count);
+  if(pbCounts.length){
+    const top = pbCounts[0];
+    awardsEl.appendChild(card('Most Pro Bowl Selections (noted, not scored)', `${ownerTag(top.p.owner)} &mdash; ${top.p.name}`, `${top.count}x`, `player.html?rank=${top.p.rank}`));
+  }
+
+  // ---- DRAFT CLASSES ----
+  const classesEl = document.getElementById('classes');
+  const years = [...new Set(players.map(p=>p.year))];
+  const yearAvg = y => {
+    const ps = players.filter(p=>p.year===y);
+    return ps.reduce((s,p)=>s+parseFloat(p.score),0)/ps.length;
+  };
+  const yearAvgs = years.map(y=>({year:y, avg:yearAvg(y)})).sort((a,b)=>b.avg-a.avg);
+  if(yearAvgs.length){
+    const best = yearAvgs[0], worst = yearAvgs[yearAvgs.length-1];
+    classesEl.appendChild(card('Best Draft Class (by avg score)', `${best.year}`, best.avg.toFixed(1), `draft-classes.html?year=${best.year}`));
+    classesEl.appendChild(card('Weakest Draft Class (by avg score)', `${worst.year}`, worst.avg.toFixed(1), `draft-classes.html?year=${worst.year}`));
+  }
+
+  // ---- TIERS ----
+  const tiersEl = document.getElementById('tiers');
+  ['Legend','Franchise','Bust'].forEach(tier=>{
+    const m = players.filter(p=>p.owner==='Matt' && p.tier===tier).length;
+    const r = players.filter(p=>p.owner==='Ryan' && p.tier===tier).length;
+    const leader = m===r ? 'Tied' : (m>r ? 'Matt' : 'Ryan');
+    tiersEl.appendChild(card(`Most ${tier}s`, `Matt ${m} &middot; Ryan ${r}`, leader, `legacy.html?tier=${tier}`));
+  });
+
+  // ---- WILDCARD BOYS ----
+  const wcEl = document.getElementById('wildcard');
+  const graded = wildcards.filter(w=>w.outcome && w.outcome!=='NaN' && w.meter!=null);
+  if(graded.length){
+    const best = [...graded].sort((a,b)=>a.meter-b.meter)[0];
+    const worst = [...graded].sort((a,b)=>b.meter-a.meter)[0];
+    wcEl.appendChild(card('Best Wildcard Hit (lowest Cooked Meter)', `${ownerTag(best.owner)} &mdash; ${best.player} (${best.year})`, best.meter));
+    wcEl.appendChild(card('Most Cooked Wildcard Pick (highest Cooked Meter)', `${ownerTag(worst.owner)} &mdash; ${worst.player} (${worst.year})`, worst.meter));
+  }
+});
+</script>
+<script src="assets/nav.js" defer></script>
+</body>
+</html>

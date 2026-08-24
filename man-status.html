@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Man Status — Trail & Bish Dynasty</title>
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+  .topbar{padding:14px 16px; border-bottom:1px solid var(--line);}
+  .brand{font-size:13px; letter-spacing:0.14em; color:var(--muted);}
+  .brand b{color:var(--text);}
+  .tagline{font-size:11px; color:var(--muted); margin-top:4px;}
+
+  .verdict{margin:16px 16px 4px; text-align:center; padding:20px 16px; background:var(--surface); border:1px solid var(--line); border-radius:16px;}
+  .verdict .lead{font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:8px;}
+  .verdict .name{font-size:clamp(28px,9vw,42px);}
+  .verdict .name.matt{color:var(--matt);}
+  .verdict .name.ryan{color:var(--ryan);}
+  .verdict .score{margin-top:6px; font-size:13px; color:var(--muted);}
+  .verdict .score b{color:var(--text); font-family:"SFMono-Regular",Consolas,monospace;}
+
+  .stat-list{padding:6px 16px 24px;}
+  .stat-row{padding:14px 0; border-bottom:1px solid var(--line);}
+  .stat-row .label-row{display:flex; justify-content:space-between; align-items:baseline; font-size:12px; color:var(--text); margin-bottom:8px; font-weight:600;}
+  .stat-bar{position:relative; height:9px; border-radius:5px; background:var(--surface2); overflow:hidden; display:flex;}
+  .stat-bar .fill{height:100%;}
+  .stat-bar .fill.matt{background:var(--matt);}
+  .stat-bar .fill.ryan{background:var(--ryan);}
+  .stat-vals{display:flex; justify-content:space-between; margin-top:7px; font-size:16px;}
+  .stat-vals .v{font-family:"SFMono-Regular",Consolas,monospace;}
+  .stat-vals .v.matt{color:var(--matt);}
+  .stat-vals .v.ryan{color:var(--ryan);}
+  .stat-vals .edge{font-size:9px; letter-spacing:0.1em; color:var(--muted); align-self:center;}
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="brand"><b>MAN STATUS</b></div>
+    <div class="tagline">The Rivalry. The Record. The Legend.</div>
+  </div>
+
+  <div class="verdict" id="verdict"></div>
+
+  <div class="section-label"><span class="display">Head-to-Head</span><span class="rule"></span></div>
+  <div class="stat-list" id="stats"></div>
+
+<script>
+fetch('data/man_status.json').then(r=>r.json()).then(rows=>{
+  const catRows = rows.filter(r => r.label !== 'Total Picks');
+  const mattWins = catRows.filter(r=>r.edge==='MATT').length;
+  const ryanWins = catRows.filter(r=>r.edge==='RYAN').length;
+  const leader = mattWins===ryanWins ? null : (mattWins>ryanWins ? 'Matt' : 'Ryan');
+  const leaderCls = leader ? leader.toLowerCase() : '';
+
+  const verdict = document.getElementById('verdict');
+  verdict.innerHTML = leader ? `
+    <div class="lead">Currently Leading</div>
+    <div class="name display ${leaderCls}">${leader}</div>
+    <div class="score">Winning <b>${leader==='Matt'?mattWins:ryanWins}</b> of ${catRows.length} tracked categories</div>
+  ` : `
+    <div class="lead">Status</div>
+    <div class="name display">Dead Even</div>
+    <div class="score">${mattWins} &ndash; ${ryanWins} across ${catRows.length} tracked categories</div>
+  `;
+
+  const statsEl = document.getElementById('stats');
+  rows.forEach(s=>{
+    const m = parseFloat(s.matt), r = parseFloat(s.ryan);
+    const max = Math.max(m, r, 1);
+    const mPct = (m/max)*50, rPct = (r/max)*50;
+    const row = document.createElement('div');
+    row.className = 'stat-row';
+    row.innerHTML = `
+      <div class="label-row"><span>${s.label}</span></div>
+      <div class="stat-bar">
+        <div style="width:50%;display:flex;justify-content:flex-end;"><div class="fill matt" style="width:${mPct}%"></div></div>
+        <div style="width:50%;"><div class="fill ryan" style="width:${rPct}%"></div></div>
+      </div>
+      <div class="stat-vals">
+        <span class="v matt">${s.matt}</span>
+        <span class="edge">${s.edge} EDGE</span>
+        <span class="v ryan">${s.ryan}</span>
+      </div>
+    `;
+    statsEl.appendChild(row);
+  });
+});
+</script>
+<script src="assets/nav.js" defer></script>
+</body>
+</html>

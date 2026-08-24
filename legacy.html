@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Legacy — Trail & Bish Dynasty</title>
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+  .topbar{position:sticky; top:0; z-index:10; background:rgba(11,13,18,0.92); backdrop-filter:blur(8px); border-bottom:1px solid var(--line); padding:14px 16px 12px;}
+  .brand{font-size:13px; letter-spacing:0.14em; color:var(--muted);}
+  .brand b{color:var(--text);}
+  .disclaimer{font-size:10.5px; color:var(--muted); margin-top:6px; line-height:1.5;}
+
+  .tier-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:14px 16px;}
+  .tier-card{border-radius:14px; padding:16px 14px; border:1px solid var(--line); cursor:pointer; background:var(--surface);}
+  .tier-card.active{border-color:var(--legend-a);}
+  .tier-card .tname{font-size:15px; margin-bottom:4px;}
+  .tier-card .trange{font-size:10.5px; color:var(--muted); font-family:"SFMono-Regular",Consolas,monospace;}
+  .tier-card .tcount{margin-top:10px; font-family:"SFMono-Regular",Consolas,monospace; font-size:24px;}
+  .tier-card.legend{background:linear-gradient(145deg, rgba(242,169,59,0.14), rgba(232,94,199,0.08));}
+
+  .sortbar{display:flex; align-items:center; gap:8px; padding:4px 16px 8px; font-size:11px; color:var(--muted);}
+  .sortbar select{background:var(--surface2); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:6px 8px; font-size:12px;}
+
+  .list{padding:4px 16px 24px;}
+  .p-card{display:flex; align-items:center; gap:12px; padding:12px 4px; border-bottom:1px solid var(--line); text-decoration:none; color:var(--text);}
+  .p-rank{width:30px; flex:0 0 30px; font-size:11px; color:var(--muted); font-family:"SFMono-Regular",Consolas,monospace;}
+  .p-main{flex:1; min-width:0;}
+  .p-name{font-size:15px; font-weight:600;}
+  .p-meta{font-size:11px; color:var(--muted); margin-top:2px;}
+  .p-owner-dot{display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:5px; vertical-align:middle;}
+  .p-owner-dot.matt{background:var(--matt);}
+  .p-owner-dot.ryan{background:var(--ryan);}
+  .p-score{font-family:"SFMono-Regular",Consolas,monospace; font-size:16px; flex:0 0 auto;}
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="brand"><b>LEGACY</b></div>
+    <div class="disclaimer">Trail & Bish Dynasty tiers only &mdash; not the real NFL Hall of Fame. "Legend" here means top of this roster's scoring, nothing more.</div>
+  </div>
+
+  <div class="tier-grid" id="tierGrid"></div>
+  <div class="sortbar">
+    <span>SORT</span>
+    <select id="sortSel">
+      <option value="score-desc">Score (High &rarr; Low)</option>
+      <option value="score-asc">Score (Low &rarr; High)</option>
+      <option value="name-asc">Name (A&ndash;Z)</option>
+    </select>
+  </div>
+  <div class="list" id="list"></div>
+
+<script>
+const TIERS = ["Legend","Franchise","High-End Starter","Starter","Contributor","Bust"];
+const TIER_RANGE = {
+  "Legend":"\u226555", "Franchise":"28\u201354.9", "High-End Starter":"12\u201327.9",
+  "Starter":"5\u201311.9", "Contributor":"2\u20134.9", "Bust":"0\u20131.9"
+};
+function tierClass(t){ return (t||"").toLowerCase().replace(/\s+/g,'-'); }
+
+const params = new URLSearchParams(location.search);
+let currentTier = params.get('tier') || 'Legend';
+let sort = 'score-desc';
+let PLAYERS = [];
+
+function render(){
+  const grid = document.getElementById('tierGrid');
+  const counts = {};
+  TIERS.forEach(t => counts[t] = PLAYERS.filter(p=>p.tier===t).length);
+  grid.innerHTML = TIERS.map(t => `
+    <div class="tier-card ${tierClass(t)} ${t===currentTier?'active':''}" data-tier="${t}">
+      <div class="tname display">${t}</div>
+      <div class="trange">${TIER_RANGE[t]}</div>
+      <div class="tcount">${counts[t]}</div>
+    </div>
+  `).join('');
+  [...grid.children].forEach(c=>{
+    c.addEventListener('click', ()=>{ currentTier = c.dataset.tier; render(); });
+  });
+
+  let rows = PLAYERS.filter(p=>p.tier===currentTier);
+  rows.sort((a,b)=>{
+    if(sort==='score-desc') return parseFloat(b.score)-parseFloat(a.score);
+    if(sort==='score-asc') return parseFloat(a.score)-parseFloat(b.score);
+    return a.name.localeCompare(b.name);
+  });
+
+  const list = document.getElementById('list');
+  list.innerHTML = rows.map(p => `
+    <a class="p-card" href="player.html?rank=${p.rank}">
+      <div class="p-rank">#${p.rank}</div>
+      <div class="p-main">
+        <div class="p-name">${p.name}</div>
+        <div class="p-meta"><span class="p-owner-dot ${p.owner.toLowerCase()}"></span>${p.owner} &middot; ${p.position} &middot; ${p.year}</div>
+      </div>
+      <div class="p-score">${p.score}</div>
+    </a>
+  `).join('') || '<div style="padding:20px 4px; color:var(--muted); font-size:13px;">No players in this tier.</div>';
+}
+
+document.getElementById('sortSel').addEventListener('change', e=>{ sort = e.target.value; render(); });
+
+fetch('data/players.json').then(r=>r.json()).then(data=>{
+  PLAYERS = data.filter(p=>p.score!=='\u2014');
+  render();
+});
+</script>
+<script src="assets/nav.js" defer></script>
+</body>
+</html>

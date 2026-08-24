@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Full Roster — Trail & Bish Dynasty</title>
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+  .topbar{position:sticky; top:0; z-index:10; background:rgba(11,13,18,0.92); backdrop-filter:blur(8px); border-bottom:1px solid var(--line); padding:14px 16px 12px;}
+  .topbar .row1{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;}
+  .brand{font-size:13px; letter-spacing:0.14em; color:var(--muted);}
+  .brand b{color:var(--text);}
+  .count{font-size:11px; color:var(--muted);}
+  .count b{color:var(--text);}
+  .search{width:100%; background:var(--surface2); border:1px solid var(--line); border-radius:10px; padding:10px 12px; color:var(--text); font-size:14px; margin-bottom:10px;}
+  .search::placeholder{color:var(--muted);}
+  .filters{display:flex; gap:8px; flex-wrap:wrap;}
+  .fgroup{display:flex; gap:6px; flex-wrap:wrap;}
+  .chip{font-size:11px; letter-spacing:0.04em; padding:6px 12px; border-radius:20px; border:1px solid var(--line); background:var(--surface2); color:var(--muted); cursor:pointer; user-select:none; white-space:nowrap;}
+  .chip.active-matt{background:var(--matt); color:#fff; border-color:var(--matt);}
+  .chip.active-ryan{background:var(--ryan); color:#fff; border-color:var(--ryan);}
+  .chip.active-all{background:#3a4152; color:var(--text); border-color:#3a4152;}
+  .chip.active-tier{background:linear-gradient(90deg,var(--legend-a),var(--legend-b),var(--legend-c)); color:#0B0D12; border:none; font-weight:700;}
+  .sortbar{display:flex; align-items:center; gap:8px; padding:12px 16px 4px; font-size:11px; color:var(--muted); letter-spacing:0.08em;}
+  .sortbar select{background:var(--surface2); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:6px 8px; font-size:12px;}
+  .list{padding:6px 16px 20px;}
+  .p-card{display:flex; align-items:center; gap:12px; padding:12px 4px; border-bottom:1px solid var(--line);}
+  .p-rank{width:30px; flex:0 0 30px; font-size:11px; color:var(--muted); font-family:"SFMono-Regular",Consolas,monospace;}
+  .p-main{flex:1; min-width:0;}
+  .p-name{font-size:15px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .p-meta{font-size:11px; color:var(--muted); margin-top:2px;}
+  .p-owner-dot{display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:5px; vertical-align:middle;}
+  .p-owner-dot.matt{background:var(--matt);}
+  .p-owner-dot.ryan{background:var(--ryan);}
+  .p-right{text-align:right; flex:0 0 auto;}
+  .p-score{font-family:"SFMono-Regular",Consolas,monospace; font-size:17px;}
+  .p-tier{display:inline-block; margin-top:4px; font-size:9px; letter-spacing:0.06em; text-transform:uppercase; padding:3px 8px; border-radius:10px; color:var(--muted); border:1px solid var(--line);}
+  .p-tier.legend{background:linear-gradient(90deg,var(--legend-a),var(--legend-b),var(--legend-c)); color:#0B0D12; border:none; font-weight:700;}
+  .p-tier.franchise{border-color:#a9822e; color:#e8c27a;}
+  .p-tier.high-end-starter{border-color:#3a4a73; color:#8fa3d6;}
+  .p-tier.pending{border-style:dashed;}
+  .empty{padding:40px 16px; text-align:center; color:var(--muted); font-size:13px;}
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="row1">
+      <div class="brand"><b>FULL ROSTER</b></div>
+      <div class="count"><b id="countNum">—</b> picks</div>
+    </div>
+    <input class="search" id="search" placeholder="Search player name…">
+    <div class="filters">
+      <div class="fgroup" id="ownerFilter">
+        <div class="chip active-all" data-owner="all">All</div>
+        <div class="chip" data-owner="Matt">Matt</div>
+        <div class="chip" data-owner="Ryan">Ryan</div>
+      </div>
+      <div class="fgroup" id="tierFilter">
+        <div class="chip" data-tier="all">All Tiers</div>
+        <div class="chip" data-tier="Legend">Legend</div>
+        <div class="chip" data-tier="Franchise">Franchise</div>
+        <div class="chip" data-tier="High-End Starter">HES</div>
+        <div class="chip" data-tier="Starter">Starter</div>
+        <div class="chip" data-tier="Contributor">Contributor</div>
+        <div class="chip" data-tier="Bust">Bust</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sortbar">
+    <span>SORT</span>
+    <select id="sortSel">
+      <option value="score-desc">Score (High → Low)</option>
+      <option value="score-asc">Score (Low → High)</option>
+      <option value="rank-asc">Rank</option>
+      <option value="year-desc">Year (Newest)</option>
+      <option value="year-asc">Year (Oldest)</option>
+      <option value="name-asc">Name (A–Z)</option>
+    </select>
+  </div>
+
+  <div class="list" id="list"></div>
+  <div class="empty" id="empty" style="display:none;">No players match those filters.</div>
+
+<script>
+let PLAYERS = [];
+let state = { search:"", owner:"all", tier:"all", sort:"score-desc" };
+
+function tierClass(t){ return (t||"").toLowerCase().replace(/\s+/g,'-'); }
+
+function render(){
+  let rows = PLAYERS.filter(p=>{
+    if(state.owner!=="all" && p.owner!==state.owner) return false;
+    if(state.tier!=="all" && p.tier!==state.tier) return false;
+    if(state.search && !p.name.toLowerCase().includes(state.search.toLowerCase())) return false;
+    return true;
+  });
+
+  const scoreNum = p => (p.score==="—" || p.score==null) ? -1 : parseFloat(p.score);
+  rows.sort((a,b)=>{
+    switch(state.sort){
+      case "score-desc": return scoreNum(b)-scoreNum(a);
+      case "score-asc": return scoreNum(a)-scoreNum(b);
+      case "rank-asc": return a.rank-b.rank;
+      case "year-desc": return b.year-a.year;
+      case "year-asc": return a.year-b.year;
+      case "name-asc": return a.name.localeCompare(b.name);
+    }
+  });
+
+  document.getElementById('countNum').textContent = rows.length;
+  const list = document.getElementById('list');
+  const empty = document.getElementById('empty');
+  list.innerHTML = "";
+  empty.style.display = rows.length ? "none" : "block";
+
+  const frag = document.createDocumentFragment();
+  rows.forEach(p=>{
+    const el = document.createElement('a');
+    el.className = 'p-card';
+    el.href = `player.html?rank=${p.rank}`;
+    el.style.textDecoration = 'none';
+    el.style.color = 'inherit';
+    const ownerLower = (p.owner||"").toLowerCase();
+    el.innerHTML = `
+      <div class="p-rank">#${p.rank}</div>
+      <div class="p-main">
+        <div class="p-name">${p.name}</div>
+        <div class="p-meta"><span class="p-owner-dot ${ownerLower}"></span>${p.owner} · ${p.position} · ${p.year}</div>
+      </div>
+      <div class="p-right">
+        <div class="p-score">${p.score}</div>
+        <div class="p-tier ${tierClass(p.tier)}">${p.tier}</div>
+      </div>
+    `;
+    frag.appendChild(el);
+  });
+  list.appendChild(frag);
+}
+
+document.getElementById('search').addEventListener('input', e=>{ state.search = e.target.value; render(); });
+document.getElementById('ownerFilter').addEventListener('click', e=>{
+  const chip = e.target.closest('.chip'); if(!chip) return;
+  state.owner = chip.dataset.owner;
+  [...document.querySelectorAll('#ownerFilter .chip')].forEach(c=>c.classList.remove('active-matt','active-ryan','active-all'));
+  if(state.owner==="Matt") chip.classList.add('active-matt');
+  else if(state.owner==="Ryan") chip.classList.add('active-ryan');
+  else chip.classList.add('active-all');
+  render();
+});
+document.getElementById('tierFilter').addEventListener('click', e=>{
+  const chip = e.target.closest('.chip'); if(!chip) return;
+  state.tier = chip.dataset.tier;
+  [...document.querySelectorAll('#tierFilter .chip')].forEach(c=>c.classList.remove('active-tier'));
+  if(state.tier!=="all") chip.classList.add('active-tier');
+  render();
+});
+document.getElementById('sortSel').addEventListener('change', e=>{ state.sort = e.target.value; render(); });
+
+fetch('data/players.json').then(r=>r.json()).then(data=>{
+  PLAYERS = data;
+  render();
+});
+</script>
+<script src="assets/nav.js" defer></script>
+</body>
+</html>

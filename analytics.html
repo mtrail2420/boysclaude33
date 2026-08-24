@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analytics — Trail & Bish Dynasty</title>
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+  .topbar{padding:14px 16px; border-bottom:1px solid var(--line);}
+  .brand{font-size:13px; letter-spacing:0.14em; color:var(--muted);}
+  .brand b{color:var(--text);}
+  .section-sub{padding:0 16px 10px; font-size:11px; color:var(--muted); line-height:1.6;}
+  .pi-wrap{padding:6px 16px 6px;}
+  .pi-cards{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .pi-card{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px;}
+  .pi-card.leader{border-color:currentColor;}
+  .pi-card.matt{color:var(--matt);}
+  .pi-card.ryan{color:var(--ryan);}
+  .pi-owner{font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:8px;}
+  .pi-num{font-family:"SFMono-Regular",Consolas,monospace; font-size:34px; color:var(--text);}
+  .pi-bonus{font-size:10.5px; color:var(--muted); margin-top:6px;}
+  .pi-formula{font-size:10.5px; color:var(--muted); line-height:1.7; background:var(--surface); border:1px dashed var(--line); border-radius:10px; margin:10px 16px 0; padding:10px 12px;}
+  .dna-wrap{padding:6px 16px 10px;}
+  .dna-row{margin-bottom:12px;}
+  .dna-label{display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-bottom:6px;}
+  .dna-bars{display:flex; height:20px; border-radius:5px; overflow:hidden; background:var(--surface2);}
+  .dna-bars .seg{height:100%; display:flex; align-items:center; justify-content:center; font-size:9px; font-family:"SFMono-Regular",Consolas,monospace; color:#fff;}
+  .dna-bars .seg.matt{background:var(--matt);}
+  .dna-bars .seg.ryan{background:var(--ryan);}
+  .tl-wrap{padding:6px 16px 10px; overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  .tl-inner{display:flex; align-items:flex-end; gap:10px; min-width:640px; height:180px; padding:10px 4px 0;}
+  .tl-col{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%;}
+  .tl-bars{display:flex; gap:3px; align-items:flex-end; height:140px;}
+  .tl-bar{width:14px; border-radius:3px 3px 0 0;}
+  .tl-bar.matt{background:var(--matt);}
+  .tl-bar.ryan{background:var(--ryan);}
+  .tl-yr{font-size:9px; color:var(--muted); margin-top:6px; font-family:"SFMono-Regular",Consolas,monospace;}
+  .tl-legend{display:flex; gap:14px; padding:8px 16px 0; font-size:10px; color:var(--muted);}
+  .tl-legend span{display:inline-flex; align-items:center; gap:5px;}
+  .tl-legend .dot{width:8px;height:8px;border-radius:2px;}
+</style>
+</head>
+<body>
+
+  <div class="topbar"><div class="brand"><b>ANALYTICS</b></div></div>
+
+  <div class="section-label"><span class="display">Dynasty Power Index</span><span class="rule"></span></div>
+  <div class="section-sub">Composite score rewarding difference-makers over depth: average score plus a tier-weighted bonus per pick.</div>
+  <div class="pi-wrap"><div class="pi-cards" id="piCards"></div></div>
+  <div class="pi-formula mono">
+    POWER INDEX = avg_score + (Σ tier_bonus ÷ total_picks)<br>
+    Legend +15 · Franchise +8 · HES +3 · Starter 0 · Contributor −3 · Bust −8
+  </div>
+
+  <div class="section-label"><span class="display">Position DNA</span><span class="rule"></span></div>
+  <div class="section-sub">Share of each roster by position group — what each dynasty is actually built on.</div>
+  <div class="dna-wrap" id="dnaWrap"></div>
+
+  <div class="section-label"><span class="display">Draft Class Timeline</span><span class="rule"></span></div>
+  <div class="section-sub">Average score per draft class, 2007–2026. Taller bar wins that year.</div>
+  <div class="tl-legend">
+    <span><span class="dot" style="background:var(--matt)"></span>Matt</span>
+    <span><span class="dot" style="background:var(--ryan)"></span>Ryan</span>
+  </div>
+  <div class="tl-wrap"><div class="tl-inner" id="tlInner"></div></div>
+
+<script>
+const TIER_BONUS = { "Legend":15, "Franchise":8, "High-End Starter":3, "Starter":0, "Contributor":-3, "Bust":-8, "Pending":0 };
+
+fetch('data/players.json').then(r=>r.json()).then(PLAYERS=>{
+
+  function ownerStats(owner){
+    const arr = PLAYERS.filter(p=>p.owner===owner && p.score!=="—" && p.score!=null);
+    const scores = arr.map(p=>parseFloat(p.score)).filter(v=>!isNaN(v));
+    const avg = scores.reduce((a,b)=>a+b,0)/scores.length;
+    const bonusSum = arr.reduce((s,p)=>s+(TIER_BONUS[p.tier]||0),0);
+    const bonusPerPick = bonusSum/arr.length;
+    return {avg, bonusPerPick, power: avg+bonusPerPick, count: arr.length};
+  }
+  const mattStats = ownerStats('Matt');
+  const ryanStats = ownerStats('Ryan');
+  const leader = mattStats.power > ryanStats.power ? 'matt' : 'ryan';
+
+  const piCards = document.getElementById('piCards');
+  [['Matt', mattStats, 'matt'], ['Ryan', ryanStats, 'ryan']].forEach(([name, s, cls])=>{
+    const card = document.createElement('div');
+    card.className = 'pi-card ' + cls + (cls===leader ? ' leader' : '');
+    card.innerHTML = `
+      <div class="pi-owner">${name}${cls===leader ? ' · LEADS' : ''}</div>
+      <div class="pi-num">${s.power.toFixed(1)}</div>
+      <div class="pi-bonus">avg ${s.avg.toFixed(1)} + tier bonus ${s.bonusPerPick>=0?'+':''}${s.bonusPerPick.toFixed(1)}</div>
+    `;
+    piCards.appendChild(card);
+  });
+
+  const GROUPS = {
+    "QB":"QB", "RB":"RB", "WR":"WR", "TE":"TE",
+    "C":"OL","OG":"OL","OL":"OL","OT":"OL",
+    "DE":"DL/EDGE","DT":"DL/EDGE","EDGE":"DL/EDGE",
+    "ILB":"LB","LB":"LB","OLB":"LB",
+    "CB":"CB", "FS":"S","S":"S","SS":"S"
+  };
+  const groupOrder = ["QB","RB","WR","TE","OL","DL/EDGE","LB","CB","S"];
+  function groupCounts(owner){
+    const counts = {}; groupOrder.forEach(g=>counts[g]=0);
+    PLAYERS.filter(p=>p.owner===owner).forEach(p=>{
+      const g = GROUPS[p.position] || p.position;
+      counts[g] = (counts[g]||0)+1;
+    });
+    return counts;
+  }
+  const mattG = groupCounts('Matt'), ryanG = groupCounts('Ryan');
+  const dnaWrap = document.getElementById('dnaWrap');
+  groupOrder.forEach(g=>{
+    const m = mattG[g]||0, r = ryanG[g]||0;
+    const total = m+r || 1;
+    const mPct = (m/total)*100, rPct = (r/total)*100;
+    const row = document.createElement('div');
+    row.className = 'dna-row';
+    row.innerHTML = `
+      <div class="dna-label"><span>${g}</span><span class="mono">${m} · ${r}</span></div>
+      <div class="dna-bars">
+        <div class="seg matt" style="width:${mPct}%">${m>0?m:''}</div>
+        <div class="seg ryan" style="width:${rPct}%">${r>0?r:''}</div>
+      </div>
+    `;
+    dnaWrap.appendChild(row);
+  });
+
+  const years = [...new Set(PLAYERS.map(p=>p.year))].sort((a,b)=>a-b);
+  function yearAvg(owner, year){
+    const arr = PLAYERS.filter(p=>p.owner===owner && p.year===year && p.score!=="—" && p.score!=null);
+    const scores = arr.map(p=>parseFloat(p.score)).filter(v=>!isNaN(v));
+    if(!scores.length) return 0;
+    return scores.reduce((a,b)=>a+b,0)/scores.length;
+  }
+  const tlInner = document.getElementById('tlInner');
+  years.forEach(y=>{
+    const m = yearAvg('Matt', y), r = yearAvg('Ryan', y);
+    const mH = (m/100)*140, rH = (r/100)*140;
+    const col = document.createElement('div');
+    col.className = 'tl-col';
+    col.innerHTML = `
+      <div class="tl-bars">
+        <div class="tl-bar matt" style="height:${mH}px" title="Matt ${m.toFixed(1)}"></div>
+        <div class="tl-bar ryan" style="height:${rH}px" title="Ryan ${r.toFixed(1)}"></div>
+      </div>
+      <div class="tl-yr">${y}</div>
+    `;
+    tlInner.appendChild(col);
+  });
+});
+</script>
+<script src="assets/nav.js" defer></script>
+</body>
+</html>

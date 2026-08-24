@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wildcard Boys — Trail & Bish Dynasty</title>
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+  .topbar{position:sticky; top:0; z-index:10; background:rgba(11,13,18,0.92); backdrop-filter:blur(8px); border-bottom:1px solid var(--line); padding:14px 16px;}
+  .row1{display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;}
+  .brand{font-size:13px; letter-spacing:0.14em; color:var(--muted);}
+  .brand b{color:var(--text);}
+  .sub{font-size:11px; color:var(--muted);}
+  .legend-key{display:flex; gap:10px; flex-wrap:wrap; padding:12px 16px 4px; font-size:10px; color:var(--muted);}
+  .legend-key .lk{display:flex; align-items:center; gap:5px;}
+  .lk .dot{width:8px;height:8px;border-radius:50%;}
+  .year-block{padding:18px 16px 4px;}
+  .year-head{display:flex; align-items:baseline; gap:10px; margin-bottom:10px;}
+  .year-head .yr{font-size:22px;}
+  .year-head .rule{flex:1; height:1px; background:var(--line);}
+  .wc-grid{display:flex; flex-direction:column; gap:8px;}
+  .wc-cat{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px 14px;}
+  .wc-cat .catlabel{font-size:9px; letter-spacing:0.1em; color:var(--muted); text-transform:uppercase; margin-bottom:8px;}
+  .wc-pair{display:flex; gap:10px;}
+  .wc-pick{flex:1; background:var(--surface2); border-radius:9px; padding:9px 10px;}
+  .wc-pick .who{font-size:9px; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:3px; display:flex; align-items:center; gap:5px;}
+  .wc-pick .who .dot{width:6px;height:6px;border-radius:50%;}
+  .wc-pick.matt .who{color:var(--matt);}
+  .wc-pick.ryan .who{color:var(--ryan);}
+  .wc-pick .pl{font-size:13.5px; margin-bottom:2px;}
+  .wc-pick .pos{font-size:10px; color:var(--muted); margin-bottom:7px;}
+  .meter{height:5px; border-radius:3px; background:#0B0D12; overflow:hidden;}
+  .meter .m-fill{height:100%; border-radius:3px;}
+  .wc-pick .outcome{margin-top:6px; font-size:10.5px; font-weight:600;}
+  .wc-pick .notes{margin-top:3px; font-size:10px; color:var(--muted); line-height:1.4;}
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="row1"><div class="brand"><b>WILDCARD BOYS</b></div><div class="sub">Cooked Meter</div></div>
+    <div class="sub">Speculative late picks, graded after the fact. Lower meter = better hit.</div>
+  </div>
+
+  <div class="legend-key">
+    <div class="lk"><span class="dot" style="background:#3ECF6E"></span>Elite hit (0–15)</div>
+    <div class="lk"><span class="dot" style="background:#2FB8C6"></span>Solid (16–35)</div>
+    <div class="lk"><span class="dot" style="background:#F2A93B"></span>Mixed (36–50)</div>
+    <div class="lk"><span class="dot" style="background:#E8862E"></span>Underwhelming (51–65)</div>
+    <div class="lk"><span class="dot" style="background:#E8543A"></span>Cooked (66+)</div>
+  </div>
+
+  <div id="years"></div>
+
+<script>
+function meterColor(v){
+  if(v<=15) return '#3ECF6E';
+  if(v<=35) return '#2FB8C6';
+  if(v<=50) return '#F2A93B';
+  if(v<=65) return '#E8862E';
+  return '#E8543A';
+}
+
+fetch('data/wildcards.json').then(r=>r.json()).then(WC=>{
+  const byYear = {};
+  WC.forEach(w=>{
+    byYear[w.year] = byYear[w.year] || {};
+    byYear[w.year][w.category] = byYear[w.year][w.category] || {};
+    byYear[w.year][w.category][w.owner] = w;
+  });
+
+  const years = Object.keys(byYear).sort((a,b)=>b-a);
+  const container = document.getElementById('years');
+
+  years.forEach(year=>{
+    const block = document.createElement('div');
+    block.className = 'year-block';
+    const cats = Object.keys(byYear[year]).sort();
+
+    let catsHtml = '';
+    cats.forEach(cat=>{
+      const pair = byYear[year][cat];
+      const m = pair.Matt, r = pair.Ryan;
+      const pickHtml = (p, ownerClass) => {
+        if(!p) return `<div class="wc-pick ${ownerClass}"><div class="who"><span class="dot"></span>${ownerClass==='matt'?'Matt':'Ryan'}</div><div class="pl">—</div></div>`;
+        const hasOutcome = p.outcome && p.outcome !== 'NaN';
+        return `
+          <div class="wc-pick ${ownerClass}">
+            <div class="who"><span class="dot"></span>${p.owner}</div>
+            <div class="pl">${p.player}</div>
+            <div class="pos">${p.position}</div>
+            ${hasOutcome ? `
+              <div class="meter"><div class="m-fill" style="width:${p.meter}%; background:${meterColor(p.meter)}"></div></div>
+              <div class="outcome" style="color:${meterColor(p.meter)}">${p.outcome}</div>
+              <div class="notes">${p.notes||''}</div>
+            ` : `<div class="notes">Not yet graded</div>`}
+          </div>
+        `;
+      };
+      catsHtml += `
+        <div class="wc-cat">
+          <div class="catlabel">${cat}</div>
+          <div class="wc-pair">${pickHtml(m,'matt')}${pickHtml(r,'ryan')}</div>
+        </div>
+      `;
+    });
+
+    block.innerHTML = `
+      <div class="year-head"><span class="yr display">${year}</span><span class="rule"></span></div>
+      <div class="wc-grid">${catsHtml}</div>
+    `;
+    container.appendChild(block);
+  });
+});
+</script>
+<script src="assets/nav.js" defer></script>
+</body>
+</html>
