@@ -34,6 +34,9 @@ from collections import Counter
 
 AWARD_WEIGHTS = {'MVP': 40, 'SB_MVP': 25, 'OPOY': 22, 'DPOY': 22, 'OROY': 12, 'DROY': 12}
 
+# confirmed name aliases (nicknames PFR/awards data doesn't use)
+NAME_ALIASES = {"RG III": "Robert Griffin III"}
+
 
 def norm(n):
     n = re.sub(r"[.'’]", '', n or '')
@@ -53,14 +56,16 @@ def load_pfr_maps(data_dir):
 
 
 def old_role_score(text):
-    # role only -- Pro Bowl deliberately excluded from scoring
+    # role only -- Pro Bowl deliberately excluded from scoring. Broadened to catch
+    # real career language beyond a narrow keyword set (e.g. "franchise QB", "elite
+    # seasons") that earlier versions missed and under-scored real contributors for.
     if not text:
         return 0
-    if re.search(r'did not stick|never played meaningful snaps|practice squad', text, re.I):
+    if re.search(r'did not stick|never played meaningful snaps|never established|failed to (stick|develop)|short[- ]lived NFL|never materialized|practice squad(?! member)', text, re.I):
         return 0
-    if re.search(r'\bstart(er|ing|ed)\b|contributed|productive|long[- ]term|consistent|versatile|reliable', text, re.I):
+    if re.search(r'\belite\b|premier|franchise|productive|consistent|reliable|versatile|long[- ](term|serving)|leading|\bimpact\b|key contributor|start(er|ing|ed)?|contributed|playoff|champion|\d[,\d]*[- ]yard|double[- ]digit|over [\d,]+ career|career (yards|sacks|tackles|passing)|multiple.*(seasons|years)', text, re.I):
         return 5
-    if re.search(r'rotational|\bdepth\b|journeyman|\bbackup\b|\breserve\b|\bbrief\b|\blimited\b', text, re.I):
+    if re.search(r'\bdepth\b|backup|reserve|rotational|journeyman|\bbrief\b|limited role|spent time with (multiple|several)', text, re.I):
         return 2
     return 0
 
@@ -76,12 +81,17 @@ def tier_v4(s):
 
 def score_player(name, existing_notes, allpro_norm, draft_norm, awards_norm):
     """Returns (score, tier, notes). existing_notes is the fallback source for
-    unmatched (pre-2016, no major accolade) players' role scoring only."""
-    key = norm(name)
+    unmatched (no PFR match at all) players' role scoring only. A player with a
+    real major award or AP First-Team selection gets flat role credit rather than
+    re-deriving role from their own (possibly already-regenerated) note text --
+    that keeps re-runs of this script idempotent instead of losing information
+    on every pass."""
+    key = norm(NAME_ALIASES.get(name, name))
     pts = 0.0
     fact_bits = []
     pb_note = None
-    matched = False
+    has_award_or_allpro = False
+    has_draft = False
 
     for aw, wt in AWARD_WEIGHTS.items():
         m = awards_norm[aw].get(key)
@@ -89,14 +99,14 @@ def score_player(name, existing_notes, allpro_norm, draft_norm, awards_norm):
             _, years = m
             pts += wt * len(years)
             fact_bits.append(f"{aw.replace('_', ' ')} ({', '.join(map(str, years))})")
-            matched = True
+            has_award_or_allpro = True
 
     ap = allpro_norm.get(key)
     if ap:
         _, years = ap
         pts += 15 * len(years)
         fact_bits.append(f"{len(years)}x AP First-Team All-Pro ({', '.join(map(str, years))})")
-        matched = True
+        has_award_or_allpro = True
 
     dr = draft_norm.get(key)
     role_pts = None
@@ -107,21 +117,23 @@ def score_player(name, existing_notes, allpro_norm, draft_norm, awards_norm):
         if pb:
             pb_note = f"{pb}x Pro Bowl"  # noted, never scored
         role_pts = 5 if wav >= 18 else 2 if wav >= 5 else 0
-        matched = True
+        has_draft = True
 
+    if role_pts is None and has_award_or_allpro:
+        role_pts = 5  # a real major award/All-Pro selection already proves starter-caliber play
     if role_pts is None:
         role_pts = old_role_score(existing_notes)
     pts += role_pts
 
-    if not matched:
-        # no PFR match at all: still score from role fallback, unless there's
-        # truly no notes to go on (e.g. a not-yet-graded rookie pick)
-        if not existing_notes:
-            return None, None, existing_notes
-        return round(pts, 1), tier_v4(round(pts, 1)), existing_notes
-
     score = round(pts, 1)
     tier = tier_v4(score)
+
+    matched = has_award_or_allpro or has_draft
+    if not matched:
+        # no PFR match: score is still the role-fallback credit computed above,
+        # notes stay as whatever was already there (nothing to regenerate)
+        return score, tier, existing_notes
+
     note_parts = fact_bits[:4] if fact_bits else ["No AP All-Pro or major award found in the PFR record"]
     if pb_note:
         note_parts.append(pb_note)

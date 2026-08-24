@@ -2,12 +2,12 @@
   const NAV_ITEMS = [
     { href: "index.html", label: "Score", icon: "\u25C6" },
     { href: "man-status.html", label: "Man Status", icon: "\u2694" },
-    { href: "roster.html", label: "Roster", icon: "\u2261" },
     { href: "draft-classes.html", label: "Classes", icon: "\u25A6" },
+    { href: "roster.html", label: "Roster", icon: "\u2261" },
     { href: "legacy.html", label: "Legacy", icon: "\u265A" },
     { href: "records.html", label: "Records", icon: "\u2691" },
-    { href: "wildcards.html", label: "Wild", icon: "\u2668" },
     { href: "analytics.html", label: "Stats", icon: "\u2726" },
+    { href: "wildcards.html", label: "Wild", icon: "\u2668" },
     { href: "rules.html", label: "Rules", icon: "\u25CE" },
   ];
 
