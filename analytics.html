@@ -52,6 +52,14 @@
     Legend +15 · Franchise +8 · HES +3 · Starter 0 · Contributor −3 · Bust −8
   </div>
 
+  <div class="section-label"><span class="display">Power Index Over Time</span><span class="rule"></span></div>
+  <div class="section-sub">Same formula, computed as of each draft year using only picks made through that point — who actually controlled the dynasty at any given moment, not just today.</div>
+  <div class="tl-legend">
+    <span><span class="dot" style="background:var(--matt)"></span>Matt</span>
+    <span><span class="dot" style="background:var(--ryan)"></span>Ryan</span>
+  </div>
+  <div class="tl-wrap"><div class="tl-inner" id="piHistInner"></div></div>
+
   <div class="section-label"><span class="display">Position DNA</span><span class="rule"></span></div>
   <div class="section-sub">Share of each roster by position group — what each dynasty is actually built on.</div>
   <div class="dna-wrap" id="dnaWrap"></div>
@@ -91,6 +99,37 @@ fetch('data/players.json').then(r=>r.json()).then(PLAYERS=>{
       <div class="pi-bonus">avg ${s.avg.toFixed(1)} + tier bonus ${s.bonusPerPick>=0?'+':''}${s.bonusPerPick.toFixed(1)}</div>
     `;
     piCards.appendChild(card);
+  });
+
+  // POWER INDEX OVER TIME — same formula, cumulative through each draft year
+  function ownerStatsThroughYear(owner, year){
+    const arr = PLAYERS.filter(p=>p.owner===owner && p.year<=year && p.score!=="—" && p.score!=null);
+    if(!arr.length) return null;
+    const scores = arr.map(p=>parseFloat(p.score)).filter(v=>!isNaN(v));
+    if(!scores.length) return null;
+    const avg = scores.reduce((a,b)=>a+b,0)/scores.length;
+    const bonusSum = arr.reduce((s,p)=>s+(TIER_BONUS[p.tier]||0),0);
+    return avg + bonusSum/arr.length;
+  }
+  const histYears = [...new Set(PLAYERS.map(p=>p.year))].sort((a,b)=>a-b);
+  const piHistInner = document.getElementById('piHistInner');
+  const allPowerVals = histYears.flatMap(y => [ownerStatsThroughYear('Matt',y), ownerStatsThroughYear('Ryan',y)]).filter(v=>v!=null);
+  const maxPower = Math.max(...allPowerVals, 1);
+  histYears.forEach(y=>{
+    const mp = ownerStatsThroughYear('Matt', y);
+    const rp = ownerStatsThroughYear('Ryan', y);
+    const mH = mp!=null ? Math.max(2,(mp/maxPower)*140) : 0;
+    const rH = rp!=null ? Math.max(2,(rp/maxPower)*140) : 0;
+    const col = document.createElement('div');
+    col.className = 'tl-col';
+    col.innerHTML = `
+      <div class="tl-bars">
+        <div class="tl-bar matt" style="height:${mH}px" title="Matt through ${y}: ${mp!=null?mp.toFixed(1):'—'}"></div>
+        <div class="tl-bar ryan" style="height:${rH}px" title="Ryan through ${y}: ${rp!=null?rp.toFixed(1):'—'}"></div>
+      </div>
+      <div class="tl-yr">${y}</div>
+    `;
+    piHistInner.appendChild(col);
   });
 
   const GROUPS = {
